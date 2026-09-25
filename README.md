@@ -1,48 +1,34 @@
-# lab2a
+# disk-report.service
+[Unit]
+Description=Append disk usage to log
+Documentation=man:df(1)
+After=local-fs.target
 
-A brief description of this project.
+[Service]
+Type=oneshot
+User=reports
+ExecStart=/usr/local/bin/disk-report.sh
+StandardOutput=append:/var/log/disk-report.log
+StandardError=append:/var/log/disk-report.log
 
-## Overview
+# disk-report.timer
+[Unit]
+Description=Run disk-report every five minutes
+Documentation=systemd.time(7)
 
-This repository contains the source code and related files for lab2a. Update this section with a short summary of the project purpose and what it does.
+[Timer]
+OnCalendar=daily
+Persistent=true
 
-## Project Structure
+[Install]
+WantedBy=timers.target
 
-```text
-.
-├── README.md
-├── src/
-├── tests/
-└── ...
-```
+2. Algne journal'i veateade, kommenteeritud
 
-## Getting Started
+Sep 25 06:05:02 UbuntuServer disk-report.sh[1826]: /usr/local/bin/disk-report.sh: line 2: /var/log/disk-report.log: Permission denied
+Sep 25 06:05:02 UbuntuServer disk-report.sh[1828]: /usr/local/bin/disk-report.sh: line 3: /var/log/disk-report.log: Permission denied
+Sep 25 06:05:02 UbuntuServer systemd[1]: disk-report.service: Main process exited, code=exited, status=1/FAILURE
 
-### Prerequisites
+3. Miks Option B on parem kui Option A (üks lõik)
 
-- Git
-- A supported runtime or toolchain for this project
-
-### Installation
-
-```bash
-git clone https://github.com/TavaVend/lab2a.git
-cd lab2a
-```
-
-### Usage
-
-Provide instructions for running the project, including any required commands or environment variables.
-
-```bash
-# Example command
-# Replace this with the actual project command
-```
-
-## Contributing
-
-Contributions are welcome. Please fork the repository and open a pull request with your changes.
-
-## License
-
-This project is licensed under the terms of the repository's license. If no license is specified, add one before publishing or sharing the project publicly.
+Option A (chown) töötab, kuid on habras — kui logifail kunagi kustutatakse, kuulub /var/log ikka root'ile ja teenus katkeb uuesti. Option B viib kirjutamise loogika skriptist unit-faili sisse (StandardOutput=append:), nii et systemd (root'ina) avab faili teenuse eest ise — reports ei vaja kunagi /var/log kirjutusõigust. See on kõige vähemõiguste (least-privilege) lahendus: skript ei pea faili teed teadmagi ja sihtkohta saab muuta ainult unit-faili muutes.
